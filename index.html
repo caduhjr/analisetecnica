@@ -8,7 +8,7 @@
 :root{--bg:#f2f4f6;--surface:#fff;--ink:#14202b;--mute:#5d6b78;--line:#dde2e7;--up:#0b7a4b;--upbg:#dff3e9;--down:#b3261e;--downbg:#fae3e1}
 @media (prefers-color-scheme:dark){:root{--bg:#10171d;--surface:#18222b;--ink:#e8edf1;--mute:#8d9aa6;--line:#2a3743;--up:#4cc790;--upbg:#14352a;--down:#ff8a80;--downbg:#3d1d1b}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;padding:1rem;max-width:760px;margin-inline:auto}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;padding:1rem;max-width:900px;margin-inline:auto}
 h1{font-size:1.5rem;margin:.5rem 0 .25rem}
 .sub{color:var(--mute);font-size:.9rem;margin:0 0 1rem}
 .bar{display:flex;gap:.5rem;margin-bottom:.75rem}
@@ -32,36 +32,39 @@ tr:last-child td{border-bottom:0}
 <p class="sub" id="upd">Carregando…</p>
 <div class="bar">
   <input id="q" type="search" placeholder="Buscar ticker" aria-label="Buscar ticker">
-  <select id="f" aria-label="Filtrar">
-    <option value="">Todas</option>
-    <option value="d-up">Preço acima da MM diária</option>
-    <option value="d-down">Preço abaixo da MM diária</option>
-    <option value="w-up">Preço acima da MM semanal</option>
-    <option value="w-down">Preço abaixo da MM semanal</option>
-  </select>
+  <select id="f" aria-label="Filtrar"><option value="">Todas</option></select>
 </div>
 <div class="wrap"><table>
-  <thead><tr>
-    <th data-k="ticker">Ativo</th><th data-k="price">Preço</th>
-    <th data-k="sma_d">MM20 diária</th><th data-k="sma_w">MM20 semanal</th>
-  </tr></thead>
+  <thead><tr id="head"></tr></thead>
   <tbody id="rows"></tbody>
 </table></div>
 <p class="foot">“MM abaixo” significa preço acima da média (tendência de alta); “MM acima” significa preço abaixo dela. Dados com atraso. Não é recomendação de investimento.</p>
 <script>
+const MAS = [
+  {k: "d20", label: "MM20 diária", n: 20, c: "days", u: "d"},
+  {k: "d200", label: "MM200 diária", n: 200, c: "days", u: "d"},
+  {k: "w14", label: "MM14 semanal", n: 14, c: "weeks", u: "sem."},
+  {k: "w20", label: "MM20 semanal", n: 20, c: "weeks", u: "sem."}
+];
 let data = [], key = "ticker", dir = 1;
 const brl = v => v == null ? "–" : v.toLocaleString("pt-BR", {minimumFractionDigits: 2, maximumFractionDigits: 2});
-function badge(price, sma, weeks) {
-  if (sma == null) return weeks != null ? `<span class="na">acumulando ${weeks}/20 sem.</span>` : "–";
-  const below = sma < price;
-  return `<span class="b ${below ? "up" : "down"}">${below ? "MM abaixo" : "MM acima"}</span><br><span class="na">${brl(sma)}</span>`;
+const vol = v => v == null ? "–" : v >= 1e9 ? (v / 1e9).toLocaleString("pt-BR", {maximumFractionDigits: 2}) + " bi" : v >= 1e6 ? (v / 1e6).toLocaleString("pt-BR", {maximumFractionDigits: 1}) + " mi" : v >= 1e3 ? Math.round(v / 1e3).toLocaleString("pt-BR") + " mil" : String(v);
+const $ = id => document.getElementById(id);
+$("head").innerHTML = `<th data-k="ticker">Ativo</th><th data-k="price">Preço</th><th data-k="volume">Volume</th>` +
+  MAS.map(m => `<th data-k="${m.k}">${m.label}</th>`).join("");
+$("f").innerHTML += MAS.map(m =>
+  `<option value="${m.k}-up">Preço acima da ${m.label}</option><option value="${m.k}-down">Preço abaixo da ${m.label}</option>`).join("");
+function badge(r, m) {
+  const s = r[m.k];
+  if (s == null) return `<span class="na">acumulando ${r[m.c] ?? 0}/${m.n} ${m.u}</span>`;
+  const below = s < r.price;
+  return `<span class="b ${below ? "up" : "down"}">${below ? "MM abaixo" : "MM acima"}</span><br><span class="na">${brl(s)}</span>`;
 }
 function render() {
-  const q = document.getElementById("q").value.trim().toUpperCase();
-  const f = document.getElementById("f").value;
+  const q = $("q").value.trim().toUpperCase(), f = $("f").value;
   const rows = data.filter(r => r.ticker.includes(q)).filter(r => {
     if (!f) return true;
-    const [p, s] = f.split("-"), m = p === "d" ? r.sma_d : r.sma_w;
+    const [k, s] = f.split("-"), m = r[k];
     return m != null && (s === "up" ? r.price > m : r.price < m);
   }).sort((a, b) => {
     const x = a[key], y = b[key];
@@ -69,22 +72,23 @@ function render() {
     if (y == null) return -1;
     return (x > y ? 1 : x < y ? -1 : 0) * dir;
   });
-  document.getElementById("rows").innerHTML = rows.length ? rows.map(r =>
-    `<tr><td class="t">${r.ticker}<span class="n">${r.name}</span></td><td>${brl(r.price)}</td><td>${badge(r.price, r.sma_d)}</td><td>${badge(r.price, r.sma_w, r.weeks)}</td></tr>`
-  ).join("") : `<tr><td colspan="4" class="na">Nenhum ativo encontrado. Ajuste a busca ou o filtro.</td></tr>`;
+  $("rows").innerHTML = rows.length ? rows.map(r =>
+    `<tr><td class="t">${r.ticker}<span class="n">${r.name}</span></td><td>${brl(r.price)}</td><td>${vol(r.volume)}</td>` +
+    MAS.map(m => `<td>${badge(r, m)}</td>`).join("") + `</tr>`
+  ).join("") : `<tr><td colspan="${MAS.length + 3}" class="na">Nenhum ativo encontrado. Ajuste a busca ou o filtro.</td></tr>`;
 }
 document.querySelectorAll("th").forEach(th => th.onclick = () => {
   dir = key === th.dataset.k ? -dir : 1; key = th.dataset.k; render();
 });
-document.getElementById("q").oninput = render;
-document.getElementById("f").onchange = render;
+$("q").oninput = render;
+$("f").onchange = render;
 fetch("data/data.json", {cache: "no-store"}).then(r => r.json()).then(j => {
   data = j.rows;
-  document.getElementById("upd").textContent = j.updated
+  $("upd").textContent = j.updated
     ? "Atualizado em " + new Date(j.updated).toLocaleString("pt-BR", {dateStyle: "short", timeStyle: "short"})
     : "Aguardando a primeira atualização.";
   render();
-}).catch(() => document.getElementById("upd").textContent = "Não foi possível carregar os dados.");
+}).catch(() => $("upd").textContent = "Não foi possível carregar os dados.");
 </script>
 </body>
 </html>
