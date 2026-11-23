@@ -4,13 +4,14 @@ from datetime import datetime, timezone
 from statistics import mean
 
 TOKEN = os.environ.get("BRAPI_TOKEN", "")
-URL = "https://brapi.dev/api/quote/{}?range=3mo&interval=1d"
+RANGE = os.environ.get("BRAPI_RANGE") or "3mo"  # use 1y no plano Startup
+URL = "https://brapi.dev/api/quote/{}?range={}&interval=1d"
 HIST, OUT = "data/history.json", "data/data.json"
 
 
 def fetch(ticker):
     req = urllib.request.Request(
-        URL.format(ticker),
+        URL.format(ticker, RANGE),
         headers={"Authorization": f"Bearer {TOKEN}", "User-Agent": "ibov-mm"},
     )
     for _ in range(3):
@@ -34,6 +35,10 @@ def weekly_closes(closes):
     return [weeks[k] for k in sorted(weeks)]
 
 
+def sma(vals, n):
+    return round(mean(vals[-n:]), 2) if len(vals) >= n else None
+
+
 def build_row(ticker, res, hist):
     for b in res.get("historicalDataPrice") or []:
         if b.get("close") is not None:
@@ -48,8 +53,12 @@ def build_row(ticker, res, hist):
         "name": res.get("shortName") or ticker,
         "price": price,
         "change": res.get("regularMarketChangePercent"),
-        "sma_d": round(mean(daily[-20:]), 2) if len(daily) >= 20 else None,
-        "sma_w": round(mean(weekly[-20:]), 2) if len(weekly) >= 20 else None,
+        "volume": res.get("regularMarketVolume"),
+        "d20": sma(daily, 20),
+        "d200": sma(daily, 200),
+        "w14": sma(weekly, 14),
+        "w20": sma(weekly, 20),
+        "days": len(daily),
         "weeks": len(weekly),
     }
 
