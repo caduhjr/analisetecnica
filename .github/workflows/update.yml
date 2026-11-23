@@ -1,0 +1,23 @@
+name: Atualizar dados
+on:
+  schedule:
+    - cron: "0 21 * * 1-5"   # 18h de Brasília, dias úteis
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python update.py
+        env:
+          BRAPI_TOKEN: ${{ secrets.BRAPI_TOKEN }}
+      - run: |
+          git config user.name "bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add data
+          git diff --staged --quiet || (git commit -m "Atualiza dados" && git push)
