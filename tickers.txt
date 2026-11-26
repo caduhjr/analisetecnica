@@ -1,69 +1,69 @@
-ABEV3
-ALOS3
-ASAI3
-AZZA3
-B3SA3
-BBAS3
-BBDC3
-BBDC4
-BBSE3
-BEEF3
-BPAC11
-BRAP4
-BRAV3
-BRFS3
-BRKM5
-CCRO3
-CMIG4
-CMIN3
-COGN3
-CPFE3
-CPLE6
-CSAN3
-CSNA3
-CYRE3
-EGIE3
-ELET3
-ELET6
-EMBR3
-ENEV3
-ENGI11
-EQTL3
-FLRY3
-GGBR4
-GOAU4
-HAPV3
-HYPE3
-IGTI11
-ITSA4
-ITUB4
-KLBN11
-LREN3
-MGLU3
-MRFG3
-MULT3
-NATU3
-PETR3
-PETR4
-PRIO3
-RADL3
-RAIL3
-RAIZ4
-RDOR3
-RECV3
-RENT3
-SANB11
-SBSP3
-SLCE3
-SMFT3
-SUZB3
-TIMS3
-TOTS3
-UGPA3
-USIM5
-VALE3
-VAMO3
-VBBR3
-VIVT3
-WEGE3
-YDUQ3
+ABEV3;Alimentos e bebidas
+ALOS3;Imobiliário
+ASAI3;Varejo
+AZZA3;Varejo
+B3SA3;Financeiro
+BBAS3;Bancos
+BBDC3;Bancos
+BBDC4;Bancos
+BBSE3;Seguros
+BEEF3;Alimentos e bebidas
+BPAC11;Bancos
+BRAP4;Mineração
+BRAV3;Petróleo e gás
+BRFS3;Alimentos e bebidas
+BRKM5;Química
+CCRO3;Logística e concessões
+CMIG4;Energia elétrica
+CMIN3;Mineração
+COGN3;Educação
+CPFE3;Energia elétrica
+CPLE6;Energia elétrica
+CSAN3;Petróleo e gás
+CSNA3;Siderurgia
+CYRE3;Construção
+EGIE3;Energia elétrica
+ELET3;Energia elétrica
+ELET6;Energia elétrica
+EMBR3;Indústria
+ENEV3;Energia elétrica
+ENGI11;Energia elétrica
+EQTL3;Energia elétrica
+FLRY3;Saúde
+GGBR4;Siderurgia
+GOAU4;Siderurgia
+HAPV3;Saúde
+HYPE3;Saúde
+IGTI11;Imobiliário
+ITSA4;Financeiro
+ITUB4;Bancos
+KLBN11;Papel e celulose
+LREN3;Varejo
+MGLU3;Varejo
+MRFG3;Alimentos e bebidas
+MULT3;Imobiliário
+NATU3;Consumo
+PETR3;Petróleo e gás
+PETR4;Petróleo e gás
+PRIO3;Petróleo e gás
+RADL3;Varejo
+RAIL3;Logística e concessões
+RAIZ4;Petróleo e gás
+RDOR3;Saúde
+RECV3;Petróleo e gás
+RENT3;Serviços
+SANB11;Bancos
+SBSP3;Saneamento
+SLCE3;Agronegócio
+SMFT3;Consumo
+SUZB3;Papel e celulose
+TIMS3;Telecom
+TOTS3;Tecnologia
+UGPA3;Petróleo e gás
+USIM5;Siderurgia
+VALE3;Mineração
+VAMO3;Serviços
+VBBR3;Petróleo e gás
+VIVT3;Telecom
+WEGE3;Indústria
+YDUQ3;Educação
