@@ -1,94 +1,265 @@
 <!DOCTYPE html>
+
 <html lang="pt-BR">
+
 <head>
+
 <meta charset="utf-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <title>Ibovespa: preço e médias móveis</title>
+
 <style>
+
 :root{--bg:#f2f4f6;--surface:#fff;--ink:#14202b;--mute:#5d6b78;--line:#dde2e7;--up:#0b7a4b;--upbg:#dff3e9;--down:#b3261e;--downbg:#fae3e1}
+
 @media (prefers-color-scheme:dark){:root{--bg:#10171d;--surface:#18222b;--ink:#e8edf1;--mute:#8d9aa6;--line:#2a3743;--up:#4cc790;--upbg:#14352a;--down:#ff8a80;--downbg:#3d1d1b}}
+
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;padding:1rem;max-width:900px;margin-inline:auto}
+
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;padding:1rem;max-width:1100px;margin-inline:auto}
+
 h1{font-size:1.5rem;margin:.5rem 0 .25rem}
+
 .sub{color:var(--mute);font-size:.9rem;margin:0 0 1rem}
-.bar{display:flex;gap:.5rem;margin-bottom:.75rem}
+
+.bar{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.75rem}
+
 input,select{font:inherit;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:.55rem .7rem}
-input{flex:1;min-width:0}
+
+input{flex:1;min-width:8rem}select{max-width:100%}
+
 .wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+
 table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+
 th,td{padding:.6rem .7rem;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
-th:first-child,td:first-child{text-align:left}
+
+th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left}
+
 th{font-size:.85rem;font-weight:600;color:var(--mute);cursor:pointer;user-select:none}
+
 tr:last-child td{border-bottom:0}
-.t{font-weight:650}.n{display:block;font-size:.75rem;color:var(--mute);font-weight:400;max-width:12ch;overflow:hidden;text-overflow:ellipsis}
+
+.id{display:flex;align-items:center;gap:.55rem}
+
+.lg{width:26px;height:26px;border-radius:6px;object-fit:contain;background:#fff;border:1px solid var(--line);flex:none}
+
+.t{font-weight:650;line-height:1.2}.n{display:block;font-size:.75rem;color:var(--mute);font-weight:400;max-width:12ch;overflow:hidden;text-overflow:ellipsis}
+
+.sec{font-size:.85rem;color:var(--mute)}
+
 .b{display:inline-block;padding:.15rem .5rem;border-radius:999px;font-size:.8rem;font-weight:600}
-.up{background:var(--upbg);color:var(--up)}.down{background:var(--downbg);color:var(--down)}
+
+.b.up,li.up .tag{background:var(--upbg);color:var(--up)}.b.down,li.down .tag{background:var(--downbg);color:var(--down)}
+
 .na{color:var(--mute);font-size:.8rem}
+
 .foot{color:var(--mute);font-size:.8rem;margin-top:.75rem}
+
+details{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.7rem .9rem;margin-bottom:.9rem}
+
+summary{cursor:pointer;font-weight:600}
+
+ul{list-style:none;margin:.6rem 0 0;padding:0;display:grid;gap:.4rem}
+
+li{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;font-size:.92rem}
+
+.tag{padding:.1rem .5rem;border-radius:999px;font-size:.78rem;font-weight:600}
+
 </style>
+
 </head>
+
 <body>
+
 <h1>Ibovespa: preço e médias móveis</h1>
+
 <p class="sub" id="upd">Carregando…</p>
+
+<details id="chg" open><summary id="chgs">Mudanças de um dia para o outro</summary><ul id="chgl"></ul></details>
+
 <div class="bar">
+
   <input id="q" type="search" placeholder="Buscar ticker" aria-label="Buscar ticker">
-  <select id="f" aria-label="Filtrar"><option value="">Todas</option></select>
+
+  <select id="s" aria-label="Filtrar por setor"><option value="">Todos os setores</option></select>
+
+  <select id="f" aria-label="Filtrar por média"><option value="">Todas as médias</option></select>
+
 </div>
+
 <div class="wrap"><table>
+
   <thead><tr id="head"></tr></thead>
+
   <tbody id="rows"></tbody>
+
 </table></div>
-<p class="foot">“MM abaixo” significa preço acima da média (tendência de alta); “MM acima” significa preço abaixo dela. Dados com atraso. Não é recomendação de investimento.</p>
+
+<p class="foot">Verde: preço acima da média. Vermelho: preço abaixo da média. Dados com atraso. Não é recomendação de investimento.</p>
+
 <script>
+
 const MAS = [
+
   {k: "d20", label: "MM20 diária", n: 20, c: "days", u: "d"},
+
   {k: "d200", label: "MM200 diária", n: 200, c: "days", u: "d"},
+
   {k: "w14", label: "MM14 semanal", n: 14, c: "weeks", u: "sem."},
+
   {k: "w20", label: "MM20 semanal", n: 20, c: "weeks", u: "sem."}
+
 ];
+
 let data = [], key = "ticker", dir = 1;
-const brl = v => v == null ? "–" : v.toLocaleString("pt-BR", {minimumFractionDigits: 2, maximumFractionDigits: 2});
-const vol = v => v == null ? "–" : v >= 1e9 ? (v / 1e9).toLocaleString("pt-BR", {maximumFractionDigits: 2}) + " bi" : v >= 1e6 ? (v / 1e6).toLocaleString("pt-BR", {maximumFractionDigits: 1}) + " mi" : v >= 1e3 ? Math.round(v / 1e3).toLocaleString("pt-BR") + " mil" : String(v);
+
 const $ = id => document.getElementById(id);
-$("head").innerHTML = `<th data-k="ticker">Ativo</th><th data-k="price">Preço</th><th data-k="volume">Volume</th>` +
+
+const brl = v => v == null ? "–" : v.toLocaleString("pt-BR", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+const vol = v => v == null ? "–" : v >= 1e9 ? (v / 1e9).toLocaleString("pt-BR", {maximumFractionDigits: 2}) + " bi" : v >= 1e6 ? (v / 1e6).toLocaleString("pt-BR", {maximumFractionDigits: 1}) + " mi" : v >= 1e3 ? Math.round(v / 1e3).toLocaleString("pt-BR") + " mil" : String(v);
+
+const logo = r => r && r.logo ? `<img class="lg" src="${r.logo}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : "";
+
+const dm = s => s.slice(8, 10) + "/" + s.slice(5, 7);
+
+
+
+$("head").innerHTML = `<th data-k="ticker">Ativo</th><th data-k="sector">Setor</th><th data-k="price">Preço</th><th data-k="volume">Volume</th>` +
+
   MAS.map(m => `<th data-k="${m.k}">${m.label}</th>`).join("");
+
 $("f").innerHTML += MAS.map(m =>
+
   `<option value="${m.k}-up">Preço acima da ${m.label}</option><option value="${m.k}-down">Preço abaixo da ${m.label}</option>`).join("");
+
+
+
 function badge(r, m) {
+
   const s = r[m.k];
+
   if (s == null) return `<span class="na">acumulando ${r[m.c] ?? 0}/${m.n} ${m.u}</span>`;
-  const below = s < r.price;
-  return `<span class="b ${below ? "up" : "down"}">${below ? "MM abaixo" : "MM acima"}</span><br><span class="na">${brl(s)}</span>`;
+
+  const up = r.price > s;
+
+  return `<span class="b ${up ? "up" : "down"}">${up ? "Preço acima" : "Preço abaixo"}</span><br><span class="na">${brl(s)}</span>`;
+
 }
+
+
+
 function render() {
-  const q = $("q").value.trim().toUpperCase(), f = $("f").value;
-  const rows = data.filter(r => r.ticker.includes(q)).filter(r => {
+
+  const q = $("q").value.trim().toUpperCase(), sec = $("s").value, f = $("f").value;
+
+  const rows = data.filter(r => r.ticker.includes(q) && (!sec || r.sector === sec)).filter(r => {
+
     if (!f) return true;
+
     const [k, s] = f.split("-"), m = r[k];
+
     return m != null && (s === "up" ? r.price > m : r.price < m);
+
   }).sort((a, b) => {
+
     const x = a[key], y = b[key];
+
     if (x == null) return 1;
+
     if (y == null) return -1;
+
     return (x > y ? 1 : x < y ? -1 : 0) * dir;
+
   });
+
   $("rows").innerHTML = rows.length ? rows.map(r =>
-    `<tr><td class="t">${r.ticker}<span class="n">${r.name}</span></td><td>${brl(r.price)}</td><td>${vol(r.volume)}</td>` +
+
+    `<tr><td><div class="id">${logo(r)}<div class="t">${r.ticker}<span class="n">${r.name}</span></div></div></td>` +
+
+    `<td class="sec">${r.sector ?? "–"}</td><td>${brl(r.price)}</td><td>${vol(r.volume)}</td>` +
+
     MAS.map(m => `<td>${badge(r, m)}</td>`).join("") + `</tr>`
-  ).join("") : `<tr><td colspan="${MAS.length + 3}" class="na">Nenhum ativo encontrado. Ajuste a busca ou o filtro.</td></tr>`;
+
+  ).join("") : `<tr><td colspan="${MAS.length + 4}" class="na">Nenhum ativo encontrado. Ajuste a busca ou os filtros.</td></tr>`;
+
 }
+
+
+
+function renderChanges(j) {
+
+  if (!j.changes_from) {
+
+    $("chgs").textContent = "Mudanças de um dia para o outro";
+
+    $("chgl").innerHTML = `<li class="na">As mudanças aparecem a partir da próxima atualização em outro dia.</li>`;
+
+    return;
+
+  }
+
+  const by = Object.fromEntries(data.map(r => [r.ticker, r]));
+
+  const lab = Object.fromEntries(MAS.map(m => [m.k, m.label]));
+
+  const ch = (j.changes || []).slice().sort((a, b) => (a.to === b.to ? 0 : a.to === "above" ? -1 : 1) || a.ticker.localeCompare(b.ticker));
+
+  const ups = ch.filter(c => c.to === "above").length;
+
+  $("chgs").textContent = `Mudanças desde ${dm(j.changes_from)}: ${ups} para cima, ${ch.length - ups} para baixo`;
+
+  $("chgl").innerHTML = ch.length ? ch.map(c =>
+
+    `<li class="${c.to === "above" ? "up" : "down"}">${logo(by[c.ticker])}<b>${c.ticker}</b>` +
+
+    `<span class="tag">${c.to === "above" ? "passou para cima" : "passou para baixo"}</span> da ${lab[c.ma]} ` +
+
+    `<span class="na">(preço ${brl(c.price)} · média ${brl(c.sma)})</span></li>`
+
+  ).join("") : `<li class="na">Nenhum ativo cruzou uma média desde ${dm(j.changes_from)}.</li>`;
+
+}
+
+
+
 document.querySelectorAll("th").forEach(th => th.onclick = () => {
+
   dir = key === th.dataset.k ? -dir : 1; key = th.dataset.k; render();
+
 });
+
 $("q").oninput = render;
+
+$("s").onchange = render;
+
 $("f").onchange = render;
+
 fetch("data/data.json", {cache: "no-store"}).then(r => r.json()).then(j => {
+
   data = j.rows;
+
+  $("s").innerHTML += [...new Set(data.map(r => r.sector).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt"))
+
+    .map(s => `<option>${s}</option>`).join("");
+
   $("upd").textContent = j.updated
+
     ? "Atualizado em " + new Date(j.updated).toLocaleString("pt-BR", {dateStyle: "short", timeStyle: "short"})
+
     : "Aguardando a primeira atualização.";
+
+  renderChanges(j);
+
   render();
+
 }).catch(() => $("upd").textContent = "Não foi possível carregar os dados.");
+
 </script>
+
 </body>
+
 </html>
